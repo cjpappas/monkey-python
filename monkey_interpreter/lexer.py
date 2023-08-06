@@ -13,7 +13,7 @@ class Lexer:
         self.source_input = source_input
         self.read_char()
 
-    def next_token(self) -> Optional[Token]:
+    def next_token(self) -> Token:
         next_token: Optional[Token] = None
 
         self.skip_whitespace()
