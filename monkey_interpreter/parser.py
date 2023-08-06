@@ -8,8 +8,10 @@ from monkey_interpreter.token import Token, TokenType
 class Parser:
     lexer: Lexer
 
-    current_token: Token
-    peek_token: Token
+    current_token: Optional[Token] = None
+    peek_token: Optional[Token] = None
+
+    errors: list[str] = []
 
     def __init__(self, lexer: Lexer) -> None:
         self.lexer = lexer
@@ -25,6 +27,9 @@ class Parser:
     def parse_program(self) -> Program:
         program = Program([])
 
+        if self.current_token is None:
+            raise Exception("Can't parse program, current token is None")
+
         while self.current_token.tipe is not TokenType.EOF:
             statement = self.parse_statement()
 
@@ -36,6 +41,9 @@ class Parser:
         return program
 
     def parse_statement(self) -> Optional[Statement]:
+        if self.current_token is None:
+            raise Exception("Can't parse statement, current token is None")
+
         match self.current_token.tipe:
             case TokenType.LET:
                 return self.parse_let_statement()
@@ -43,6 +51,9 @@ class Parser:
                 return None
 
     def parse_let_statement(self) -> Optional[LetStatement]:
+        if self.current_token is None:
+            raise Exception("Can't parse let statment, current token is None")
+
         statement_token = self.current_token
 
         if not self.expect_peek(TokenType.IDENT):
@@ -60,15 +71,24 @@ class Parser:
         return LetStatement(statement_token, statement_name, "")
 
     def current_token_is(self, token_type: TokenType) -> bool:
-        return self.current_token.tipe is token_type
+        return self.current_token is not None and self.current_token.tipe is token_type
 
     def peek_token_is(self, token_type: TokenType) -> bool:
-        return self.peek_token.tipe is token_type
+        return self.peek_token is not None and self.peek_token.tipe is token_type
+
+    def peek_error(self, token_type: TokenType):
+        if self.peek_token is None:
+            raise Exception("Could not peek error, peek token is None")
+
+        self.errors.append(
+            f"Expected next token to be {token_type}, got {self.peek_token.tipe} instead"
+        )
 
     def expect_peek(self, token_type: TokenType) -> bool:
         if self.peek_token_is(token_type):
             self.next_token()
 
             return True
-
-        return False
+        else:
+            self.peek_error(token_type)
+            return False
